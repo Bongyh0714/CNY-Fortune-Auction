@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
         port: 3000,
         host: '0.0.0.0',
       },
-      // --- THIS IS THE NEW PART THAT FIXES YOUR 404 ERROR ---
+      // 👇 THIS IS THE CRITICAL FIX FOR THE 404 ERROR 👇
       build: {
         rollupOptions: {
           input: {
@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
           },
         },
       },
-      // ------------------------------------------------------
+      // 👆 END OF FIX 👆
       plugins: [],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
