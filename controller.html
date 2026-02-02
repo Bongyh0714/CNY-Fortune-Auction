@@ -13,247 +13,211 @@
             color: #F2C94C;
         }
         .font-imperial { font-family: 'Cinzel', serif; }
-        
-        .imperial-input {
-            background: rgba(26, 5, 5, 0.9);
-            border: 1px solid #5c4110;
-            color: #fff;
-            font-family: 'Cinzel', serif;
-            transition: all 0.2s;
-        }
-        .imperial-input:focus {
-            border-color: #F2C94C;
-            box-shadow: 0 0 15px rgba(242, 201, 76, 0.2);
-            outline: none;
-        }
-
+        .imperial-input { background: rgba(26, 5, 5, 0.9); border: 1px solid #5c4110; color: #fff; font-family: 'Cinzel', serif; }
+        .imperial-input:focus { border-color: #F2C94C; outline: none; }
         .btn-gold {
             background: linear-gradient(to bottom, #cfc09f, #aa8537);
-            color: #1a0505;
-            font-family: 'Cinzel', serif;
-            font-weight: 700;
-            border: 1px solid #fff;
+            color: #1a0505; font-weight: 700; border: 1px solid #fff;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
-        .btn-gold:active { transform: scale(0.98); }
-        .btn-gold:disabled { filter: grayscale(1); opacity: 0.5; }
-
-        .glass-panel {
-            background: rgba(20, 0, 0, 0.6);
-            backdrop-filter: blur(10px);
-            border: 1px solid #5c4110;
+        .glass-panel { background: rgba(20, 0, 0, 0.6); backdrop-filter: blur(10px); border: 1px solid #5c4110; }
+        
+        @keyframes pulse-gold {
+            0%, 100% { box-shadow: 0 0 20px #aa8537; transform: scale(1); }
+            50% { box-shadow: 0 0 40px #ffd700; transform: scale(1.02); }
         }
+        .winner-btn { animation: pulse-gold 1.5s infinite; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col p-4 bg-[url('https://www.transparenttextures.com/patterns/black-scales.png')]">
 
     <!-- LOGIN -->
     <div id="login-view" class="flex-1 flex flex-col items-center justify-center space-y-8">
-        <div class="text-center">
-            <span class="text-6xl block mb-4">🧧</span>
-            <h1 class="font-imperial text-3xl font-bold tracking-widest text-[#F2C94C]">ENTER THE<br>IMPERIAL COURT</h1>
-        </div>
-        <div class="w-full max-w-sm glass-panel p-6 rounded-lg shadow-2xl">
-            <label class="block text-xs uppercase tracking-widest text-[#cfc09f] mb-2">Team Alias</label>
-            <input type="text" id="inp-team" class="imperial-input w-full p-4 text-center text-xl rounded mb-6" placeholder="e.g. Red Dragon">
+        <h1 class="font-imperial text-3xl font-bold tracking-widest text-[#F2C94C] text-center">IMPERIAL<br>COURT</h1>
+        <div class="w-full max-w-sm glass-panel p-6 rounded-lg">
+            <input type="text" id="inp-team" class="imperial-input w-full p-4 text-center text-xl rounded mb-6" placeholder="Team Name">
             <button onclick="login()" class="btn-gold w-full py-4 text-xl tracking-[0.2em] rounded">JOIN</button>
         </div>
     </div>
 
     <!-- MAIN APP -->
-    <div id="app-view" class="hidden flex-col h-full max-w-md mx-auto w-full">
+    <div id="app-view" class="hidden flex-col h-full max-w-md mx-auto w-full relative">
         
-        <!-- Wallet Header -->
+        <!-- Header -->
         <div class="glass-panel p-4 rounded-b-xl border-t-0 mb-6 flex justify-between items-end">
             <div>
-                <p class="text-xs text-[#cfc09f] uppercase tracking-widest mb-1">Treasury Balance</p>
-                <div class="flex items-baseline gap-1">
-                    <span class="text-xl text-[#cfc09f]">RM</span>
-                    <span id="wallet-balance" class="text-4xl font-imperial font-bold text-white">20,000</span>
+                <p class="text-xs text-[#cfc09f] uppercase">Balance</p>
+                <div class="text-4xl font-imperial font-bold text-white"><span class="text-xl">RM</span> <span id="wallet-balance">20,000</span></div>
+            </div>
+            <div id="team-name-display" class="font-imperial text-[#F2C94C] font-bold">--</div>
+        </div>
+
+        <!-- Dynamic Game Status Area -->
+        <div class="flex-1 flex flex-col justify-center items-center text-center">
+            
+            <!-- 1. BIDDING STATE -->
+            <div id="state-bidding" class="w-full h-full flex flex-col hidden">
+                <div class="mb-4">
+                    <p class="text-xs text-gray-400 uppercase">Current High Bid</p>
+                    <div class="text-3xl text-white font-bold">RM <span id="val-high-bid">0</span></div>
+                </div>
+
+                <!-- Bidding Controls -->
+                <div class="mt-auto space-y-4">
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="quickBid(0.25)" class="imperial-input py-3 text-xs rounded border hover:bg-[#2a0a0a]">25%</button>
+                        <button onclick="quickBid(0.50)" class="imperial-input py-3 text-xs rounded border hover:bg-[#2a0a0a]">50%</button>
+                        <button onclick="quickBid(1.00)" class="imperial-input py-3 text-xs rounded border hover:bg-[#2a0a0a] text-red-400">ALL</button>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#cfc09f]">RM</span>
+                        <input type="number" id="bid-amount" class="imperial-input w-full p-4 pl-12 text-2xl font-bold rounded-lg" placeholder="0">
+                    </div>
+                    <button onclick="submitBid()" id="btn-submit" class="btn-gold w-full py-5 text-xl tracking-[0.2em] rounded-lg">BID</button>
+                    <div id="feedback-msg" class="h-6 text-red-500 font-bold text-xs uppercase"></div>
                 </div>
             </div>
-            <div class="text-right">
-                <p id="team-name-display" class="font-imperial text-[#F2C94C] font-bold">Team Name</p>
-            </div>
-        </div>
 
-        <!-- Status Indicator -->
-        <div class="text-center mb-6">
-            <p class="text-xs text-gray-500 uppercase tracking-widest mb-2">Current State</p>
-            <h2 id="phase-display" class="font-imperial text-2xl text-white tracking-widest glow">WAITING FOR EMPEROR</h2>
-            <p id="highest-bid-info" class="text-sm mt-2 text-[#F2C94C] hidden">High Bid: RM <span id="val-high-bid">0</span></p>
-        </div>
-
-        <!-- Bidding Controls (Only active in BIDDING phase) -->
-        <div id="bid-controls" class="flex-1 flex flex-col justify-end gap-4 opacity-50 pointer-events-none transition-all duration-300">
-            
-            <!-- Quick Buttons -->
-            <div class="grid grid-cols-3 gap-2">
-                <button onclick="quickBid(0.25)" class="imperial-input py-3 text-sm rounded border border-[#5c4110] hover:bg-[#2a0a0a]">25%</button>
-                <button onclick="quickBid(0.50)" class="imperial-input py-3 text-sm rounded border border-[#5c4110] hover:bg-[#2a0a0a]">50%</button>
-                <button onclick="quickBid(1.00)" class="imperial-input py-3 text-sm rounded border border-[#5c4110] hover:bg-[#2a0a0a] text-red-400">ALL IN</button>
+            <!-- 2. SOLD STATE (Winner View) -->
+            <div id="state-winner" class="hidden w-full flex flex-col items-center animate-bounce">
+                <div class="text-4xl mb-4">👑</div>
+                <h2 class="text-2xl font-imperial text-white mb-2">YOU WON!</h2>
+                <p class="text-[#cfc09f] mb-8">The Artifact is yours.</p>
+                <button onclick="triggerReveal()" class="btn-gold winner-btn w-full py-8 text-2xl font-black rounded-xl border-4 border-white">
+                    OPEN RED ENVELOPE
+                </button>
             </div>
 
-            <!-- Manual Input -->
-            <div class="relative">
-                <div class="absolute left-4 top-1/2 -translate-y-1/2 text-[#cfc09f]">RM</div>
-                <input type="number" id="bid-amount" class="imperial-input w-full p-4 pl-12 text-2xl font-bold rounded-lg" placeholder="0">
+            <!-- 3. SOLD STATE (Loser View) -->
+            <div id="state-loser" class="hidden w-full flex flex-col items-center opacity-50">
+                <div class="text-4xl mb-4">🔒</div>
+                <h2 class="text-2xl font-imperial text-white mb-2">SOLD</h2>
+                <p class="text-[#cfc09f]">Winner: <span id="winner-name" class="text-white font-bold">--</span></p>
+                <p class="text-xs mt-4">Waiting for reveal...</p>
             </div>
 
-            <button onclick="submitBid()" id="btn-submit" class="btn-gold py-5 text-xl tracking-[0.2em] rounded-lg shadow-lg mb-4">
-                OFFER TRIBUTE
-            </button>
-
-            <div id="feedback-msg" class="h-6 text-center text-red-500 font-bold text-xs uppercase tracking-widest"></div>
+            <!-- 4. IDLE/REVEALED -->
+            <div id="state-idle" class="hidden">
+                <h2 class="text-xl font-imperial text-[#F2C94C] animate-pulse">AWAITING NEXT ROUND</h2>
+            </div>
         </div>
-
     </div>
 
     <script type="module">
         const firebaseConfig = {
-            apiKey: "AIzaSyBJoLCecqwiZVgxfM_SLss59IjKQStBc3Y",
-  	    authDomain: "the-grand-prosperity-auction.firebaseapp.com",
-            databaseURL: "https://the-grand-prosperity-auction-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "the-grand-prosperity-auction",
-            storageBucket: "the-grand-prosperity-auction.firebasestorage.app",
-            messagingSenderId: "836710570431",
-            appId: "1:836710570431:web:06184d6af729d34f27a90a",
-            measurementId: "G-6DYF39JE61"
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
         };
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getDatabase, ref, onValue, get, set, push } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+        import { getDatabase, ref, onValue, get, set, update, push } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // State
         let myId = localStorage.getItem('imp_id');
         let myName = localStorage.getItem('imp_name');
         let myBalance = 20000;
         let currentHighBid = 0;
-        let gamePhase = 'IDLE';
 
-        // DOM
-        const loginView = document.getElementById('login-view');
-        const appView = document.getElementById('app-view');
-        const bidControls = document.getElementById('bid-controls');
-        const bidInput = document.getElementById('bid-amount');
-        const balanceDisplay = document.getElementById('wallet-balance');
-        const feedback = document.getElementById('feedback-msg');
-
-        // Check Login
-        if (myId) {
-            initApp();
-        }
+        if (myId) initApp();
 
         window.login = async () => {
             const name = document.getElementById('inp-team').value.trim();
             if(!name) return;
-            
             const id = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+            
             const userRef = ref(db, `teams/${id}`);
             const snap = await get(userRef);
-
-            if(!snap.exists()) {
-                await set(userRef, { name, balance: 20000 });
-            }
+            if(!snap.exists()) await set(userRef, { name, balance: 20000 }); // High Stakes Start
 
             localStorage.setItem('imp_id', id);
             localStorage.setItem('imp_name', name);
-            myId = id;
-            myName = name;
+            myId = id; myName = name;
             initApp();
         };
 
         function initApp() {
-            loginView.classList.add('hidden');
-            appView.classList.remove('hidden');
-            appView.classList.add('flex');
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('app-view').classList.remove('hidden');
+            document.getElementById('app-view').classList.add('flex');
             document.getElementById('team-name-display').innerText = myName;
 
-            // 1. Listen to Balance (Realtime Refunds)
+            // Balance
             onValue(ref(db, `teams/${myId}/balance`), (snap) => {
                 myBalance = snap.val() || 0;
-                balanceDisplay.innerText = myBalance.toLocaleString();
-                // Visual flash
-                balanceDisplay.classList.add('text-green-400');
-                setTimeout(() => balanceDisplay.classList.remove('text-green-400'), 300);
+                const el = document.getElementById('wallet-balance');
+                el.innerText = myBalance.toLocaleString();
+                el.classList.add('text-green-400');
+                setTimeout(() => el.classList.remove('text-green-400'), 300);
             });
 
-            // 2. Listen to Game State
+            // Game State Logic
             onValue(ref(db, 'gameState'), (snap) => {
                 const state = snap.val();
                 if(!state) return;
-                
-                gamePhase = state.phase;
                 currentHighBid = state.highestBid || 0;
-
-                // Update UI Text
-                document.getElementById('phase-display').innerText = gamePhase === 'GRID' ? "AWAITING SELECTION" : (gamePhase === 'BIDDING' ? "BIDDING OPEN" : "ARTIFACT REVEALED");
-                
-                document.getElementById('highest-bid-info').classList.toggle('hidden', gamePhase === 'GRID');
                 document.getElementById('val-high-bid').innerText = currentHighBid.toLocaleString();
 
-                // Unlock/Lock Controls
-                if (gamePhase === 'BIDDING') {
-                    bidControls.classList.remove('opacity-50', 'pointer-events-none');
-                    // Pre-fill next logical bid
-                    if (!bidInput.value || parseInt(bidInput.value) <= currentHighBid) {
-                        bidInput.value = currentHighBid + 50;
+                // Hide All
+                ['state-bidding', 'state-winner', 'state-loser', 'state-idle'].forEach(id => {
+                    document.getElementById(id).classList.add('hidden');
+                });
+
+                // Show Correct View
+                if (state.phase === 'BIDDING') {
+                    document.getElementById('state-bidding').classList.remove('hidden');
+                    // Auto-increment bid input helper
+                    const bidInput = document.getElementById('bid-amount');
+                    if(!bidInput.value || parseInt(bidInput.value) <= currentHighBid) {
+                        bidInput.value = currentHighBid + 100;
                     }
-                } else {
-                    bidControls.classList.add('opacity-50', 'pointer-events-none');
+                } 
+                else if (state.phase === 'SOLD') {
+                    if (state.leaderId === myId) {
+                        document.getElementById('state-winner').classList.remove('hidden');
+                    } else {
+                        document.getElementById('winner-name').innerText = state.leaderName;
+                        document.getElementById('state-loser').classList.remove('hidden');
+                    }
+                } 
+                else {
+                    document.getElementById('state-idle').classList.remove('hidden');
                 }
             });
         }
 
-        // Bidding Logic
-        window.quickBid = (pct) => {
-            bidInput.value = Math.floor(myBalance * pct);
+        window.triggerReveal = () => {
+            update(ref(db, 'gameState'), { phase: 'REVEALED' });
         };
+
+        window.quickBid = (pct) => document.getElementById('bid-amount').value = Math.floor(myBalance * pct);
 
         window.submitBid = async () => {
-            const amount = parseInt(bidInput.value);
+            const amount = parseInt(document.getElementById('bid-amount').value);
+            if (amount > myBalance) return showMsg("Too Expensive!");
+            if (amount <= currentHighBid) return showMsg("Bid Higher!");
 
-            // Client-Side Validation
-            if (amount > myBalance) {
-                showFeedback("Insufficient Treasury!");
-                return;
-            }
-            if (amount <= currentHighBid) {
-                showFeedback(`Must bid > ${currentHighBid}`);
-                return;
-            }
-
-            // Disable temporarily
             const btn = document.getElementById('btn-submit');
-            btn.disabled = true;
-            btn.innerText = "OFFERING...";
-
+            btn.disabled = true; btn.innerText = "...";
+            
             try {
-                await push(ref(db, 'bidQueue'), {
-                    teamId: myId,
-                    amount: amount,
-                    timestamp: Date.now()
-                });
-                showFeedback("Offer Sent...", "text-green-400");
-            } catch (e) {
-                showFeedback("Error Sending Bid");
-            } finally {
-                setTimeout(() => {
-                    btn.disabled = false;
-                    btn.innerText = "OFFER TRIBUTE";
-                }, 1000);
-            }
+                await push(ref(db, 'bidQueue'), { teamId: myId, amount, timestamp: Date.now() });
+            } catch(e) { console.error(e); }
+            
+            setTimeout(() => { btn.disabled = false; btn.innerText = "BID"; }, 1000);
         };
 
-        function showFeedback(msg, colorClass = "text-red-500") {
-            feedback.innerText = msg;
-            feedback.className = `h-6 text-center font-bold text-xs uppercase tracking-widest ${colorClass}`;
-            setTimeout(() => feedback.innerText = "", 2000);
+        function showMsg(txt) {
+            const el = document.getElementById('feedback-msg');
+            el.innerText = txt;
+            setTimeout(() => el.innerText = "", 2000);
         }
-
     </script>
 </body>
 </html>
