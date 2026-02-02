@@ -303,7 +303,7 @@
             renderGrid();
         });
 
-        // 3. Ledger (Bid History for Current Round)
+        // 3. Ledger (Unique Highest Bid Per Team)
         onValue(ref(db, 'currentRoundBids'), (snap) => {
             ledgerList.innerHTML = '';
             const bids = snap.val();
@@ -313,10 +313,21 @@
                 return;
             }
 
-            // Convert to array, sort descending
-            const sortedBids = Object.values(bids).sort((a, b) => b.amount - a.amount);
+            // --- NEW LOGIC: Filter for Unique Teams ---
+            const uniqueTeamBids = {};
 
-            // Render Top 5
+            Object.values(bids).forEach(bid => {
+                // If we haven't seen this team yet, OR this new bid is higher than their stored bid
+                if (!uniqueTeamBids[bid.teamName] || bid.amount > uniqueTeamBids[bid.teamName].amount) {
+                    uniqueTeamBids[bid.teamName] = bid;
+                }
+            });
+
+            // Convert back to array and Sort Descending
+            const sortedBids = Object.values(uniqueTeamBids).sort((a, b) => b.amount - a.amount);
+            // ------------------------------------------
+
+            // Render Top 10
             sortedBids.slice(0, 10).forEach((bid, index) => {
                 const row = document.createElement('div');
                 row.className = 'ledger-row flex justify-between items-center p-3 rounded transition-all';
