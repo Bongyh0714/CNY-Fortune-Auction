@@ -1,0 +1,5 @@
+{
+  "name": "CNY Fortune Auction",
+  "description": "A Chinese New Year themed auction game. Features a Projector (Server/Admin) and Controller (Player Wallet).",
+  "requestFramePermissions": []
+}
