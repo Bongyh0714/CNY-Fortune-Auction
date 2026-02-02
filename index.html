@@ -182,7 +182,10 @@
 
     </main>
 
-    <script type="module">
+<script type="module">
+        // -----------------------------------------------------------
+        // 🔴 IMPORTANT: PASTE YOUR REAL FIREBASE KEYS HERE AGAIN 🔴
+        // -----------------------------------------------------------
         const firebaseConfig = {
             apiKey: "AIzaSyBJoLCecqwiZVgxfM_SLss59IjKQStBc3Y",
   	    authDomain: "the-grand-prosperity-auction.firebaseapp.com",
@@ -193,14 +196,19 @@
             appId: "1:836710570431:web:06184d6af729d34f27a90a",
             measurementId: "G-6DYF39JE61"
         };
+        // -----------------------------------------------------------
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getDatabase, ref, onValue, set, update, get, remove, onChildAdded, runTransaction, push } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+        import { getDatabase, ref, onValue, set, update, get, remove, onChildAdded, push } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- HIGH STAKES CARD DATA ---
+        // --- GLOBAL STATE ---
+        let gameState = { phase: 'GRID', round: 1, highestBid: 0 };
+        let envelopesStatus = {}; 
+
+        // --- GAME DATA (High Stakes) ---
         const cardsData = [
             { id: 1, name: "The Magic Bowl", desc: "+3,000 Points", type: "ADD", val: 3000 },
             { id: 2, name: "The Market Crash", desc: "Divide Score by 2", type: "MULTIPLY", val: 0.5 },
@@ -229,19 +237,13 @@
             { id: 25, name: "The High Roller", desc: "Wager Amount -> Double or Nothing", type: "GAMBLE_WAGER", val: 0 }
         ];
 
-        // --- GLOBAL STATE ---
-        let gameState = { phase: 'GRID', round: 1, highestBid: 0 };
-        let envelopesStatus = {}; // { 1: true, 2: false ... } true = used
-        
         // --- UI ELEMENTS ---
         const viewGrid = document.getElementById('view-grid');
         const viewAuction = document.getElementById('view-auction');
         const gridContainer = document.getElementById('grid-container');
         const auctionCardNum = document.getElementById('auction-card-num');
         const cardFlipper = document.getElementById('card-flipper');
-        const prizeTitle = document.getElementById('prize-title');
         const prizeText = document.getElementById('prize-text');
-        const prizeDesc = document.getElementById('prize-desc');
         const ledgerList = document.getElementById('ledger-list');
         const displayHighBid = document.getElementById('display-highest-bid');
         const btnNext = document.getElementById('btn-next');
@@ -251,7 +253,6 @@
         renderGrid();
 
         // --- LISTENERS ---
-
         // 1. Game State
         onValue(ref(db, 'gameState'), (snap) => {
             const data = snap.val();
@@ -267,32 +268,32 @@
             if (gameState.phase === 'GRID') {
                 viewGrid.classList.remove('opacity-0', 'pointer-events-none');
                 viewAuction.classList.add('opacity-0', 'pointer-events-none');
-                
-                // Reset card flip
+                viewGrid.style.display = 'flex'; // Ensure visible
+
                 cardFlipper.classList.remove('is-revealed');
                 btnNext.classList.add('hidden');
                 btnReveal.classList.remove('hidden');
             } else {
-                // BIDDING or REVEALED
                 viewGrid.classList.add('opacity-0', 'pointer-events-none');
                 viewAuction.classList.remove('opacity-0', 'pointer-events-none');
-                
-                // Set the card number
+                setTimeout(() => viewGrid.style.display = 'none', 500); // Hide after fade
+
                 if(gameState.currentCard) {
                     auctionCardNum.innerText = gameState.currentCard;
+                    const card = cardsData.find(c => c.id == gameState.currentCard);
+                    
+                    // Front of card text (optional update)
+                    // Back of card text
+                    if(card) {
+                         document.querySelector('.back h3').innerText = card.name;
+                         prizeText.innerText = card.desc;
+                    }
                 }
 
                 if(gameState.phase === 'REVEALED') {
                     cardFlipper.classList.add('is-revealed');
                     btnReveal.classList.add('hidden');
                     btnNext.classList.remove('hidden');
-                    
-                    // Show Card Details
-                    const card = cardsData.find(c => c.id === gameState.currentCard);
-                    if (card) {
-                        prizeTitle.innerText = card.name;
-                        prizeText.innerText = card.desc;
-                    }
                 }
             }
         });
@@ -303,7 +304,7 @@
             renderGrid();
         });
 
-        // 3. Ledger (Unique Highest Bid Per Team)
+        // 3. Ledger (FIXED: Unique Teams Only)
         onValue(ref(db, 'currentRoundBids'), (snap) => {
             ledgerList.innerHTML = '';
             const bids = snap.val();
@@ -313,21 +314,15 @@
                 return;
             }
 
-            // --- NEW LOGIC: Filter for Unique Teams ---
             const uniqueTeamBids = {};
-
             Object.values(bids).forEach(bid => {
-                // If we haven't seen this team yet, OR this new bid is higher than their stored bid
                 if (!uniqueTeamBids[bid.teamName] || bid.amount > uniqueTeamBids[bid.teamName].amount) {
                     uniqueTeamBids[bid.teamName] = bid;
                 }
             });
 
-            // Convert back to array and Sort Descending
             const sortedBids = Object.values(uniqueTeamBids).sort((a, b) => b.amount - a.amount);
-            // ------------------------------------------
 
-            // Render Top 10
             sortedBids.slice(0, 10).forEach((bid, index) => {
                 const row = document.createElement('div');
                 row.className = 'ledger-row flex justify-between items-center p-3 rounded transition-all';
@@ -350,39 +345,27 @@
                 const div = document.createElement('div');
                 div.id = `grid-cell-${i}`;
                 div.className = `grid-cell rounded-md aspect-square flex items-center justify-center text-2xl font-imperial font-bold cursor-default transition-all ${isUsed ? 'used' : 'hover:border-[#F2C94C]'}`;
-                div.innerHTML = `
-                    <span class="${isUsed ? '' : 'text-[#F2C94C]'}">${i}</span>
-                `;
+                div.innerHTML = `<span class="${isUsed ? '' : 'text-[#F2C94C]'}">${i}</span>`;
                 gridContainer.appendChild(div);
             }
         }
 
-        // --- SERVER LOGIC (Admin Only Triggered) ---
-        // This processes the bid queue to ensure atomic transactions
+        // --- BID QUEUE HANDLER (Admin Device Only) ---
         const bidQueueRef = ref(db, 'bidQueue');
         onChildAdded(bidQueueRef, async (snapshot) => {
             const request = snapshot.val();
             const requestKey = snapshot.key;
             if(!request) return;
 
-            console.log("Processing Bid:", request);
-
             try {
-                // 1. Get Fresh State
                 const stateSnap = await get(ref(db, 'gameState'));
                 const state = stateSnap.val();
 
-                if (state.phase !== 'BIDDING') {
+                if (state.phase !== 'BIDDING' || request.amount <= (state.highestBid || 0)) {
                     await remove(ref(db, `bidQueue/${requestKey}`));
                     return;
                 }
 
-                if (request.amount <= (state.highestBid || 0)) {
-                    await remove(ref(db, `bidQueue/${requestKey}`));
-                    return;
-                }
-
-                // 2. Validate Balance & Deduct from New Bidder
                 const newBidderRef = ref(db, `teams/${request.teamId}`);
                 const newBidderSnap = await get(newBidderRef);
                 const newBidder = newBidderSnap.val();
@@ -392,28 +375,26 @@
                     return;
                 }
 
-                // 3. REFUND Previous Leader
+                // REFUND Previous Leader
                 if (state.leaderId) {
                     const oldBidderRef = ref(db, `teams/${state.leaderId}`);
-                    const oldBidderSnap = await get(oldBidderRef);
-                    if (oldBidderSnap.exists()) {
-                        const currentOldBal = oldBidderSnap.val().balance;
-                        const refundAmt = state.highestBid;
-                        await update(oldBidderRef, { balance: currentOldBal + refundAmt });
+                    const oldSnap = await get(oldBidderRef);
+                    if (oldSnap.exists()) {
+                        await update(oldBidderRef, { balance: oldSnap.val().balance + state.highestBid });
                     }
                 }
 
-                // 4. CHARGE New Bidder
+                // CHARGE New Bidder
                 await update(newBidderRef, { balance: newBidder.balance - request.amount });
 
-                // 5. UPDATE Game State
+                // UPDATE Game State
                 await update(ref(db, 'gameState'), {
                     highestBid: request.amount,
                     leaderId: request.teamId,
                     leaderName: newBidder.name
                 });
 
-                // 6. LOG to Ledger
+                // LOG
                 await push(ref(db, 'currentRoundBids'), {
                     teamName: newBidder.name,
                     amount: request.amount,
@@ -423,132 +404,17 @@
             } catch (e) {
                 console.error("Bid Transaction Error", e);
             }
-
-            // Cleanup queue
             await remove(ref(db, `bidQueue/${requestKey}`));
         });
 
-
-        // --- LOGIC ENGINE: EXECUTE CARD EFFECT ---
-        async function executeCardEffect(cardId, winnerId) {
-            if (!winnerId) return; 
-            
-            const card = cardsData.find(c => c.id === cardId);
-            if (!card) return;
-
-            console.log("Executing Card:", card.name, "for", winnerId);
-
-            // Fetch all teams for complex logic (stealing, global hits)
-            const teamsSnap = await get(ref(db, 'teams'));
-            const teams = teamsSnap.val() || {};
-            const winner = teams[winnerId];
-
-            if (!winner) return; // Should not happen
-
-            let updates = {};
-            
-            // Helper to get random team other than winner
-            const otherTeamIds = Object.keys(teams).filter(id => id !== winnerId);
-            const randomOpponentId = otherTeamIds.length > 0 ? otherTeamIds[Math.floor(Math.random() * otherTeamIds.length)] : null;
-
-            switch (card.type) {
-                case "ADD":
-                    updates[`teams/${winnerId}/balance`] = winner.balance + card.val;
-                    break;
-                case "MULTIPLY":
-                     updates[`teams/${winnerId}/balance`] = Math.floor(winner.balance * card.val);
-                     break;
-                case "STEAL_HIGH":
-                    // Find highest balance team (other than winner)
-                    let maxBal = -Infinity;
-                    let targetId = null;
-                    otherTeamIds.forEach(id => {
-                        if (teams[id].balance > maxBal) {
-                            maxBal = teams[id].balance;
-                            targetId = id;
-                        }
-                    });
-                    if (targetId) {
-                        updates[`teams/${winnerId}/balance`] = winner.balance + card.val;
-                        updates[`teams/${targetId}/balance`] = teams[targetId].balance - card.val;
-                    }
-                    break;
-                case "GAMBLE_DICE":
-                    const roll = Math.floor(Math.random() * 6) + 1;
-                    const effect = roll > 3 ? 4000 : -2000;
-                    updates[`teams/${winnerId}/balance`] = winner.balance + effect;
-                    alert(`GAMBLE: Rolled a ${roll}! Effect: ${effect > 0 ? '+' : ''}${effect}`);
-                    break;
-                case "PHOENIX":
-                    if (winner.balance < 0) {
-                         updates[`teams/${winnerId}/balance`] = 5000;
-                    } else {
-                         updates[`teams/${winnerId}/balance`] = winner.balance + 1000;
-                    }
-                    break;
-                case "STEAL_CHOICE":
-                    // Auto-pick random opponent for simplicity
-                    if (randomOpponentId) {
-                        updates[`teams/${winnerId}/balance`] = winner.balance + card.val;
-                        updates[`teams/${randomOpponentId}/balance`] = teams[randomOpponentId].balance - card.val;
-                        alert(`Stole from ${teams[randomOpponentId].name}!`);
-                    }
-                    break;
-                case "GIVE_LOW":
-                     // Find lowest balance team (other than winner)
-                    let minBal = Infinity;
-                    let poorId = null;
-                    otherTeamIds.forEach(id => {
-                        if (teams[id].balance < minBal) {
-                            minBal = teams[id].balance;
-                            poorId = id;
-                        }
-                    });
-                    if (poorId) {
-                        updates[`teams/${winnerId}/balance`] = winner.balance - card.val;
-                        updates[`teams/${poorId}/balance`] = teams[poorId].balance + card.val;
-                    }
-                    break;
-                case "GLOBAL_HIT":
-                    otherTeamIds.forEach(id => {
-                        updates[`teams/${id}/balance`] = teams[id].balance + card.val; // val is negative
-                    });
-                    break;
-                case "DUEL":
-                    // Simulating winning the duel automatically adds val
-                    updates[`teams/${winnerId}/balance`] = winner.balance + card.val;
-                    break;
-                case "SWAP":
-                    if (randomOpponentId) {
-                        updates[`teams/${winnerId}/balance`] = teams[randomOpponentId].balance;
-                        updates[`teams/${randomOpponentId}/balance`] = winner.balance;
-                        alert(`Swapped balance with ${teams[randomOpponentId].name}!`);
-                    }
-                    break;
-                default:
-                    // Default fallback: If there is a simple numeric value, apply it.
-                    if (card.val && typeof card.val === 'number' && card.val !== 0) {
-                         updates[`teams/${winnerId}/balance`] = winner.balance + card.val;
-                    }
-                    break;
-            }
-
-            if (Object.keys(updates).length > 0) {
-                await update(ref(db), updates);
-            }
-        }
-
-
-        // --- ADMIN CONTROLS ---
+        // --- ADMIN ACTIONS ---
         window.adminAction = async (action) => {
             if (action === 'DRAW') {
-                // Logic: Find unused -> Shuffle -> Set State
                 let available = [];
                 for(let i=1; i<=25; i++) if(!envelopesStatus[i]) available.push(i);
                 
                 if(available.length === 0) return alert("All envelopes used!");
 
-                // Animation
                 let loops = 0;
                 const interval = setInterval(() => {
                     document.querySelectorAll('.grid-cell').forEach(c => c.classList.remove('active'));
@@ -575,13 +441,7 @@
 
             if (action === 'REVEAL') {
                 update(ref(db, 'gameState'), { phase: 'REVEALED' });
-                
-                // EXECUTE CARD LOGIC IMMEDIATELY IF THERE IS A WINNER
-                if (gameState.leaderId) {
-                    executeCardEffect(gameState.currentCard, gameState.leaderId);
-                } else {
-                    console.log("No winner this round. No card effect applied.");
-                }
+                // We will add the "EXECUTE" button logic later or handle manually based on cardsData
             }
 
             if (action === 'NEXT') {
@@ -596,14 +456,15 @@
                 });
             }
         };
-        
+
         window.resetGame = () => {
             if(confirm("Reset all data?")) {
                 set(ref(db), {
                     gameState: { phase: 'GRID', round: 1, highestBid: 0 },
                     envelopes: {},
                     teams: {},
-                    currentRoundBids: {}
+                    currentRoundBids: {},
+                    bidQueue: {}
                 });
             }
         };
